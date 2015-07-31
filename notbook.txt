@@ -1,0 +1,194 @@
+磁盘读写速度命令：hdparm -Tt /dev/sda1 
+
+
+1.什么叫僵尸进程，什么叫孤儿进程？各有什么危害？
+僵尸进程是指父进程在子进程退出后，没有调用waipid函数来释放进程号，导致进程号一直被占用，当系统产生
+大量的僵尸进程时，那么最后系统将没有进程号可用，导致无法创建进程，这是非常危险的。
+孤儿进程是指父进程在子进程退出之前退出，孤儿进程将会被系统的init进程所收养，然后统一进行正常退出，
+孤儿进程对系统没有危害
+任何一个子进程(init除外)在exit()之后，并非马上就消失掉，而是留下一个称为僵尸进程(Zombie)的数据结构，
+等待父进程处理。
+
+2.僵尸进程的解决办法？
+通过信号机制：一旦子进程退出后，出发一个信号处理函数，在信号处理函数里面调用waitpid
+通过fork两次，原理是将子进程成为孤儿进程，从而其的父进程变为init进程
+
+3.select 返回值>0：就绪描述字的正数目；-1：出错；0 ：超时
+int select (int maxfd + 1,fd_set *readset,fd_set *writeset,fd_set *exceptset,const struct timeval * timeout);
+
+4.epoll只有epoll_create,epoll_ctl,epoll_wait 3个系统调用。
+int epoll_create(int size);自从linux2.6.8之后，size参数是被忽略的。当创建好epoll句柄后，它就是会占用一个fd值，
+所以在使用完epoll后，必须调用close()关闭，否则可能导致fd被耗尽。
+epoll的事件注册函数int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event);
+第一个参数是epoll_create()的返回值。
+第二个参数表示动作，用三个宏来表示：
+EPOLL_CTL_ADD：注册新的fd到epfd中；
+EPOLL_CTL_MOD：修改已经注册的fd的监听事件；
+EPOLL_CTL_DEL：从epfd中删除一个fd；
+ 
+第三个参数是需要监听的fd。
+第四个参数是告诉内核需要监听什么事
+收集在epoll监控的事件中已经发生的事件：
+int epoll_wait(int epfd, struct epoll_event * events, int maxevents, int timeout);
+如果函数调用成功，返回对应I/O上已准备好的文件描述符数目，如返回0表示已超时
+
+5.拷贝构造函数的形参为什么用引用而不用值传递？
+如果拷贝构造函数不是引用传递而是值传递的话，那么在初始化一个对象的时候会循环递归调用构造函数
+
+6.new失败了会出现什么样的结果？
+抛出bad_alloc异常来报告分配失败；
+返回空指针，而不会抛出异常。
+
+7.如何调试程序异常，程序没有异常退出
+产生core文件
+
+8.自旋锁的实现
+自旋锁在执行单元在获取锁之前，如果发现有其他执行单元正在占用锁，则会不停的循环判断锁状态，
+直到锁被释放，期间并不会阻塞自己。由于在等待时不断的"自旋",这也是它为什么叫做自旋锁。
+所以自旋锁使用时，是非常消耗CPU资源的。
+
+9.如何避免死锁
+
+10.进程互斥问题，进程阻塞与非阻塞
+
+
+12.自旋锁的作用？
+自旋锁是专为防止多处理器并发而引入的一种锁，它在内核中大量应用于中断处理等部分（对于单处理器来说，
+防止中断处理中的并发可简单采用关闭中断的方式，即在标志寄存器中关闭/打开中断标志位，不需要自旋锁）。
+
+13.哈希查找？
+哈希查找的操作步骤：
+⑴用给定的哈希函数构造哈希表；
+⑵根据选择的冲突处理方法解决地址冲突；
+⑶在哈希表的基础上执行哈希查找。
+
+14.类的成员函数作为线程入口
+
+使用静态成员函数，this指针在创建线程的时候传入进去
+
+15.数据结构中堆的作用
+堆排序，进行索引
+
+16.类的静态成员函数使用时的注意事项
+C++静态成员函数与类相联系，而不与类的对象相联系，所以，在类的外部调用类中的公有静态成员函数，
+必须在其左面加上“类名：：”,而不是通过对象名调用公有静态成员函数。在类的外部不能调用类中的私有静
+态成员函数。
+
+17.如何获取一个文件路径
+readlink
+
+18.自己实现printf函数
+#include<stdarg.h>
+
+void minprintf(char *fmt, ...)
+{
+    va_list ap;
+    char *p, *sval;
+    int ival;
+    double dval;
+
+    va_start(ap, fmt);
+    for (p = fmt; *p; p++) {
+        if(*p != '%') {
+            putchar(*p);
+            continue;
+        }
+        switch(*++p) {
+        case 'd':
+            ival = va_arg(ap, int);
+            printf("%d", ival);
+            break;
+        case 'f':
+            dval = va_arg(ap, double);
+            printf("%f", dval);
+            break;
+        case 's':
+            for (sval = va_arg(ap, char *); *sval; sval++)
+                putchar(*sval);
+            break;
+        default:
+            putchar(*p);
+            break;
+        }
+    }
+    va_end(ap);
+}
+
+19.结构体中的冒号表示位域
+http://blog.csdn.net/boo12355/article/details/11788655
+
+20.斐波那契
+long fib(int x)   
+{   
+　if(x>2)   
+　　return(fib(x-1)+fib(x-2))； //直接递归   
+　else   
+　　return 1；   
+} 
+
+21.递归的理解
+递归的目的是简化程序设计，使程序易读。   
+但递归增加了系统开销。 时间上， 执行调用与返回的额外工作要占用CPU时间。空间上，随着每递归一次，
+栈内存就多占用一截。   
+相应的非递归函数虽然效率高，但却比较难编程，而且相对来说可读性差。   
+现代程序设计的目标主要是可读性好。随着计算机硬件性能的不断提高，程序在更多的场合优先考虑
+可读而不是高效，所以，鼓励用递归函数实现程序思想。
+
+22.如何把一棵树转换成二叉树
+将树转换为二叉树的步骤如下：
+1加线：所有兄弟节点之间加线
+2去线：保留树中每个结点与它第一个孩子的连线，删除其与其他孩子的连线
+3层次调整：以根结点为轴心，将整棵树旋转，使之层次分明。
+
+23. 图的遍历有两种遍历方式：深度优先遍历(depth-first search)和广度优先遍历(breadth-first search)。
+
+24.设置无阻塞
+sockfd = socket(AF_INET,SOCK_STREAM,0); 
+fcntl(sockfd,F_SETFL,O_NONBLOCK)； 
+
+17.哈希表与平衡二叉树的区别？
+5、排序方面的一些问题
+
+void *mymemcpy(void *dst, const void *src, int num)
+{
+	char *tmp = dst;
+	const char *s = src;
+	while(num --)
+	{
+		*tmp++ = *s++;	
+	}	
+	return tmp;
+}
+//字符串赋值函数
+char *strcpy( char *strDestination, const char *strSource )
+{
+	//
+	assert(strDestination != NULL && strSource != NULL);
+	int i = 0;
+	while (*strSource!= '\0')
+	{
+		strDestination[i++] = *strSource++;
+	}
+	strDestination[i] = '\0';
+	return strDestination;
+}
+
+int atoi( const char *string )
+{
+	char *p = (char*)string;
+	char c;
+	int   i = 0;
+	while(c = *p++)
+	{
+		if(c>='0' && c<='9')
+		{
+			i = i*10 + (c-'0');
+		}
+		else
+			return -1;                     //无效的字符串
+	}
+	return i;
+}turn tmp;
+}
+
+
